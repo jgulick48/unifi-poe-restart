@@ -1,0 +1,21 @@
+FROM golang:1.22.1 as builder
+
+WORKDIR /app
+
+COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+
+COPY ./ ./
+
+RUN go test ./...
+
+RUN GOOS=linux GOARCH=arm GOARM=5 CGO_ENABLED=0 go build
+
+FROM alpine:3.14.0
+
+COPY --from=builder /app/unifi-poe-restart /bin/unifi-poe-restart
+WORKDIR /var/lib/unifi-poe-restart/
+
+CMD ["/bin/unifi-poe-restart","-configFile=/var/lib/unifi-poe-restart/config.json"]
